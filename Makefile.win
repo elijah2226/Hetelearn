@@ -1,0 +1,37 @@
+# Project: Recommendation in HIN
+# Makefile created by Dev-C++ 5.11
+
+CPP      = g++.exe -D__DEBUG__
+CC       = gcc.exe -D__DEBUG__
+WINDRES  = windres.exe
+OBJ      = HIN.o main.o csv2HIN.o customAlgorithm.o
+LINKOBJ  = HIN.o main.o csv2HIN.o customAlgorithm.o
+LIBS     = -L"D:/software/Dev-Cpp/MinGW64/lib" -L"D:/software/Dev-Cpp/MinGW64/x86_64-w64-mingw32/lib" -static-libgcc -pg -g3
+INCS     = -I"D:/software/Dev-Cpp/MinGW64/include" -I"D:/software/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include" -I"D:/software/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.9.2/include"
+CXXINCS  = -I"D:/software/Dev-Cpp/MinGW64/include" -I"D:/software/Dev-Cpp/MinGW64/x86_64-w64-mingw32/include" -I"D:/software/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.9.2/include" -I"D:/software/Dev-Cpp/MinGW64/lib/gcc/x86_64-w64-mingw32/4.9.2/include/c++"
+BIN      = "Recommendation in HIN.exe"
+CXXFLAGS = $(CXXINCS) -pg -g3 -std=c++11
+CFLAGS   = $(INCS) -pg -g3 -std=c++11
+RM       = rm.exe -f
+
+.PHONY: all all-before all-after clean clean-custom
+
+all: all-before $(BIN) all-after
+
+clean: clean-custom
+	${RM} $(OBJ) $(BIN)
+
+$(BIN): $(OBJ)
+	$(CPP) $(LINKOBJ) -o $(BIN) $(LIBS)
+
+HIN.o: HIN.cpp
+	$(CPP) -c HIN.cpp -o HIN.o $(CXXFLAGS)
+
+main.o: main.cpp
+	$(CPP) -c main.cpp -o main.o $(CXXFLAGS)
+
+csv2HIN.o: csv2HIN.cpp
+	$(CPP) -c csv2HIN.cpp -o csv2HIN.o $(CXXFLAGS)
+
+customAlgorithm.o: customAlgorithm.cpp
+	$(CPP) -c customAlgorithm.cpp -o customAlgorithm.o $(CXXFLAGS)
