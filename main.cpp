@@ -17,8 +17,8 @@ int main(int argc, char** argv) {
 														   make_tuple("data\\chefmozparking.csv", 0, 1, -1)
 														  };
 	HIN hin;
-	for(auto iter=readFileOption.begin(); iter!=readFileOption.end(); iter++){
-		csv2HIN temp(&hin, get<0>(*iter), get<1>(*iter), get<2>(*iter), get<3>(*iter));	
+	for(auto file=readFileOption.begin(); file!=readFileOption.end(); file++){
+		csv2HIN temp(&hin, get<0>(*file), get<1>(*file), get<2>(*file), get<3>(*file));	
 	}
 //	hin.printNetworkSchema();
 //	hin.printHIN();
@@ -29,6 +29,13 @@ int main(int argc, char** argv) {
 	map<string, double> para;
 	for(auto iter=hin.linkTypeList.begin(); iter!=hin.linkTypeList.end(); iter++){
 		para.emplace(get<2>(*iter), rd(e));
+	}
+	ofstream outPut;
+	outPut.open("out.csv"); 
+	
+	outPut << "origin Para:" << endl;
+	for(auto p=para.begin(); p!=para.end(); p++){
+		outPut << p->first << ":" << p->second << endl;
 	}
 
 //	生成转移概率矩阵
@@ -42,6 +49,11 @@ int main(int argc, char** argv) {
 
 //	训练 
 	BRPtrain(&hin, &transMatrix, &para, &posImpFB);
+//	输出学习后的参数列表
+	outPut << "after Para:" << endl;
+	for(auto p=para.begin(); p!=para.end(); p++){
+		outPut << p->first << ":" << p->second << endl;
+	}
 //	预测输出
 	 
 	return 0;

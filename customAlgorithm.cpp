@@ -5,6 +5,7 @@
 #include<iterator>
 #include<cmath>
 #include<fstream>
+#include<ctime>
 using namespace std;
 
 //	全局变量 
@@ -12,7 +13,7 @@ map<string,map<string,map<pair<string,double>,set<string>>>> P;
 vector<set<vector<string>>> allPath;
 const double e= 2.7182818284, CONVERGE=5*pow(10,-4);
 //	输出到文件
-ofstream outPut;
+//ofstream outPut;
 
 //	随机数生成器
 template<typename Iter, typename RandomGenerator>
@@ -26,8 +27,8 @@ Iter select_randomly(Iter start, Iter end, RandomGenerator& g){
 template<typename Iter>
 Iter select_randomly(Iter start, Iter end) {
 //  random_device生成随机数给mt19937作为种子 
-	static std::random_device rd;
-    static std::mt19937 gen(rd());
+//	static random_device rd;
+    static mt19937 gen(time(0));
     return select_randomly(start, end, gen);
 }
 
@@ -313,18 +314,18 @@ void BRPtrain(const HIN *hin, const map<string,map<string,map<pair<string,double
 			allItem.insert(iter->second.begin(), iter->second.end());
 		}
 	}
-	outPut.open("out.csv"); 
-	for(auto iter=hin->nodeList.begin(); iter!=hin->nodeList.end(); iter++){
-		if(iter->first==start){
+//	outPut.open("out.csv"); 
+	for(auto nodeType=hin->nodeList.begin(); nodeType!=hin->nodeList.end(); nodeType++){
+		if(nodeType->first==start){
 //			训练规模
 			int count=1, notConvg;
 			double estimateDif, posEtm;
 			while(true){
 				cout << count << endl;
-				outPut << "-----" << count << "-----" << endl << endl;
+//				outPut << "-----" << count << "-----" << endl << endl;
 				notConvg = 0;
 //				随机选取结点迭代拟合（一个点就是迭代一次）
-				auto istStart = select_randomly(iter->second.begin(), iter->second.end());
+				auto istStart = select_randomly(nodeType->second.begin(), nodeType->second.end());
 //				正负反馈集合
 				posItem=(*posImpFB)[*istStart];
 				negItem.clear();
@@ -351,10 +352,10 @@ void BRPtrain(const HIN *hin, const map<string,map<string,map<pair<string,double
 							break;
 						}
 					}
-					outPut << para->first << ": ";
+//					outPut << para->first << ": ";
 					double n=7;
 					double grad = 1/(1+pow(e, estimateDif))*(RWR(*istStart, *posI, &linkType)-RWR(*istStart, *negI, &linkType));
-					outPut << grad << endl;
+//					outPut << grad << endl;
 					if(abs(grad)>CONVERGE){
 						notConvg=1;
 					}
@@ -363,21 +364,22 @@ void BRPtrain(const HIN *hin, const map<string,map<string,map<pair<string,double
 					}
 					para->second += n*grad;
 				}
-				outPut << endl << "迭代后的参数：" << endl;
-				for(auto para=nPara.begin(); para!=nPara.end(); para++){
-					outPut << para->first << " : " << para->second << endl;
-				}
+//				outPut << endl << "迭代后的参数：" << endl;
+//				for(auto para=nPara.begin(); para!=nPara.end(); para++){
+//					outPut << para->first << " : " << para->second << endl;
+//				}
 				lPara = nPara; 
 //				更新转移概率矩阵
 				transitionMatrix(hin, &lPara, &P);
 				count++;
 				if(notConvg==0){
-//					cout << "收敛" << endl; 
+//					更新传入的参数列表
+					cout << count << endl;
 					*Para=lPara;
 					break;
 				}
 			}
-			outPut.close();
+//			outPut.close();
 			break;
 		}
 	}
