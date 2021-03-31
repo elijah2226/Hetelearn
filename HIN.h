@@ -18,6 +18,7 @@ class HIN
 		map<string, set<string>> nodeList;
 		map<string, set<tuple<string, string, double>>> linkList;
 
+
 //		function
 //		HIN init
 		void initNodeList(string nodeType){
@@ -28,7 +29,7 @@ class HIN
 			set<tuple<string, string, double>> temp;
 			linkList.emplace(linkType, temp);
 		}
-//		network schema	
+//		network schema
 		void addNodeType(string nodeType){
 			nodeTypeList.emplace(nodeType); 
 			initNodeList(nodeType);

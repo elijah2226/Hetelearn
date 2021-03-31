@@ -6,6 +6,7 @@
 extern void transitionMatrix(const HIN*, const map<string,double>*, map<string, map<string, map<pair<string,double>, set<string>>>>*);
 extern void implicitFB(const set<tuple<string, string, double>>*, map<string, set<string>>*, int pos=2, int dir=1);
 extern void BRPtrain(const HIN*, const map<string,map<string,map<pair<string,double>,set<string>>>>*, map<string,double>*, map<string, set<string>>*, string start="userID", string end="placeID");
+extern void predict(const HIN&, const map<string,map<string,map<pair<string,double>,set<string>>>>&, vector<pair<string,double>>&, string, string start="userID", string end="placeID", int k=5);
 
 int main(int argc, char** argv) {
 //	定义文档信息，方便转换成网络 
@@ -23,6 +24,7 @@ int main(int argc, char** argv) {
 //	hin.printNetworkSchema();
 //	hin.printHIN();
 
+
 //	随机初始化参数系列（θ：边类型的概率集合）
 	default_random_engine e(time(0));
 	uniform_real_distribution<double> rd(0.3,0.7);
@@ -38,23 +40,33 @@ int main(int argc, char** argv) {
 		outPut << p->first << ":" << p->second << endl;
 	}
 
+
 //	生成转移概率矩阵
 	map<string, map<string, map<pair<string,double>, set<string>>>> transMatrix;
 	transitionMatrix(&hin, &para, &transMatrix);
+
 
 //	隐式反馈 
 	auto rating = (hin.linkList)["rating"];
 	map<string, set<string>> posImpFB;
 	implicitFB(&rating, &posImpFB);
 
+
 //	训练 
 	BRPtrain(&hin, &transMatrix, &para, &posImpFB);
+	
 //	输出学习后的参数列表
 	outPut << "after Para:" << endl;
 	for(auto p=para.begin(); p!=para.end(); p++){
 		outPut << p->first << ":" << p->second << endl;
 	}
+	
+	
 //	预测输出
-	 
+	transitionMatrix(&hin, &para, &transMatrix);
+	vector<pair<string, double>> items;
+	predict(hin, transMatrix, items, "U1123");
+	
+	
 	return 0;
 }
