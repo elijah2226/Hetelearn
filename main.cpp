@@ -3,10 +3,10 @@
 #include<ctime>
 
 //	函数声明 
-extern void transitionMatrix(const HIN*, const map<string,double>*, map<string, map<string, map<pair<string,double>, set<string>>>>*);
+extern void transitionMatrix(const HIN&, const map<string,double>&, map<string,map<string,map<pair<string,double>,set<string>>>>&);
 extern void implicitFB(const set<tuple<string, string, double>>*, map<string, set<string>>*, int pos=2, int dir=1);
-extern void BRPtrain(const HIN*, const map<string,map<string,map<pair<string,double>,set<string>>>>*, map<string,double>*, map<string, set<string>>*, string start="userID", string end="placeID");
-extern void predict(const HIN&, const map<string,map<string,map<pair<string,double>,set<string>>>>&, vector<pair<string,double>>&, string, string start="userID", string end="placeID", int k=5);
+extern void BRPtrain(const HIN&, const map<string,map<string,map<pair<string,double>,set<string>>>>&, map<string,double>&, map<string, set<string>>&, string start="userID", string end="placeID");
+extern void predict(const HIN&, const map<string,map<string,map<pair<string,double>,set<string>>>>&, vector<pair<string,double>>&, string, string start="userID", string end="placeID", int k=10);
 
 int main(int argc, char** argv) {
 //	定义文档信息，方便转换成网络 
@@ -43,7 +43,7 @@ int main(int argc, char** argv) {
 
 //	生成转移概率矩阵
 	map<string, map<string, map<pair<string,double>, set<string>>>> transMatrix;
-	transitionMatrix(&hin, &para, &transMatrix);
+	transitionMatrix(hin, para, transMatrix);
 
 
 //	隐式反馈 
@@ -53,7 +53,7 @@ int main(int argc, char** argv) {
 
 
 //	训练 
-	BRPtrain(&hin, &transMatrix, &para, &posImpFB);
+	BRPtrain(hin, transMatrix, para, posImpFB);
 	
 //	输出学习后的参数列表
 	outPut << "after Para:" << endl;
@@ -63,7 +63,7 @@ int main(int argc, char** argv) {
 	
 	
 //	预测输出
-	transitionMatrix(&hin, &para, &transMatrix);
+	transitionMatrix(hin, para, transMatrix);
 	vector<pair<string, double>> items;
 	predict(hin, transMatrix, items, "U1123");
 	

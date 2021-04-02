@@ -11,11 +11,11 @@ class csv2HIN
 //		data
 		vector<string> title;
 		
-		
 //		function
 		int maxIndex(int a, int b, int c){
 			return c>(a>b?a:b)?c:(a>b?a:b);
 		}
+		
 		csv2HIN(HIN* hin, string filePath, int startNodeIndex, int endNodeIndex, int linkIndex){
 			int max=maxIndex(startNodeIndex, endNodeIndex, linkIndex), linkIndex1=endNodeIndex+1;
 //			ÎÄ¼þÁ÷

@@ -12,7 +12,7 @@ using namespace std;
 //	全局变量
 map<string,map<string,map<pair<string,double>,set<string>>>> P;
 vector<set<vector<string>>> allPath;
-const double e= 2.7182818284, CONVERGE=5*pow(10,-4);
+const double e= 2.7182818284, CONVERGE=pow(10,-3);
 
 //	随机数生成器
 template<typename Iter, typename RandomGenerator>
@@ -30,48 +30,44 @@ Iter select_randomly(Iter start, Iter end) {
     return select_randomly(start, end, gen);
 }
 
-//	找到指定结点的指定边类型的数量 
+
+//	返回结点的某边类型的数量
 int neibrNodeTypeCount(const map<string, set<tuple<string, string, double>>> *nodeLinkList, set<string> *neibrNodeList, string node, string neibrType){
 	neibrNodeList->clear();
 	int count = 0;
-	for(auto iter=nodeLinkList->begin(); iter!=nodeLinkList->end(); iter++){
-		if(iter->first==neibrType){
-			for(auto iter2=(iter->second).begin(); iter2!=(iter->second).end(); iter2++){
-				if(get<0>(*iter2)==node){
-					count++;
-					neibrNodeList->emplace(get<1>(*iter2)); 
-				}else if(get<1>(*iter2)==node){
-					count++;
-					neibrNodeList->emplace(get<0>(*iter2));
-				}
-			}
-			break;
+	auto links = nodeLinkList->find(neibrType);
+	for(auto link=(links->second).begin(); link!=(links->second).end(); link++){
+		if(get<0>(*link)==node){
+			count++;
+			neibrNodeList->emplace(get<1>(*link));
+		}else if(get<1>(*link)==node){
+			count++;
+			neibrNodeList->emplace(get<0>(*link));
 		}
 	}
 	return count;
 }
 
 //	计算转移概率矩阵 
-void transitionMatrix(const HIN *hin,const map<string,double> *para, map<string,map<string,map<pair<string,double>,set<string>>>> *transMatrix){
+void transitionMatrix(const HIN &hin, const map<string,double> &para, map<string,map<string,map<pair<string,double>,set<string>>>>& transMatrix){
 	set<string> neibrNodeList;
 	map<pair<string,double>, set<string>> neibrTypePro;
 	map<string, map<pair<string,double>, set<string>>> neibrNodeTypePro;
 	string node, nodeType;
 //	从图的nodelist中取出结点集合及其类型 
-	for(auto iter=hin->nodeList.begin(); iter!=hin->nodeList.end(); iter++){
-		nodeType = iter->first;
+	for(auto nodeTypes=hin.nodeList.begin(); nodeTypes!=hin.nodeList.end(); nodeTypes++){
+		nodeType = nodeTypes->first;
 		neibrNodeTypePro.clear();
 //		获取结点类型的边类型集合 
 		map<string, string> nodeLinkTypeList;
-		for(auto iter1=hin->linkTypeList.begin(); iter1!=hin->linkTypeList.end(); iter1++){
-			if(get<0>(*iter1)==nodeType){
-				nodeLinkTypeList.emplace(get<2>(*iter1), get<1>(*iter1));
-			}else if(get<1>(*iter1)==nodeType){
-				nodeLinkTypeList.emplace(get<2>(*iter1), get<0>(*iter1));
+		for(auto linkType=hin.linkTypeList.begin(); linkType!=hin.linkTypeList.end(); linkType++){
+			if(get<0>(*linkType)==nodeType){
+				nodeLinkTypeList.emplace(get<2>(*linkType), get<1>(*linkType));
+			}else if(get<1>(*linkType)==nodeType){
+				nodeLinkTypeList.emplace(get<2>(*linkType), get<0>(*linkType));
 			}
 		}
-		
-		for(auto iter1=iter->second.begin(); iter1!=iter->second.end(); iter1++){
+		for(auto iter1=nodeTypes->second.begin(); iter1!=nodeTypes->second.end(); iter1++){
 			node = *iter1;
 			neibrTypePro.clear();
 			
@@ -80,16 +76,16 @@ void transitionMatrix(const HIN *hin,const map<string,double> *para, map<string,
 				int nodeTypeCount;
 				double posibility; 
 //				获取结点特定边的数量
-				nodeTypeCount = neibrNodeTypeCount(&(hin->linkList), &neibrNodeList, node, iter2->first);
+				nodeTypeCount = neibrNodeTypeCount(&(hin.linkList), &neibrNodeList, node, iter2->first);
 				if(nodeTypeCount){
-					posibility = (para->find(iter2->first))->second*(1.0/nodeTypeCount);
+					posibility = (para.find(iter2->first))->second*(1.0/nodeTypeCount);
 					pair<string, double> neibrTypeP(iter2->second, posibility);
 					neibrTypePro.emplace(neibrTypeP, neibrNodeList); 
 				}
 			}
 			neibrNodeTypePro.emplace(node, neibrTypePro);
 		}
-		transMatrix->emplace(nodeType, neibrNodeTypePro);
+		transMatrix.emplace(nodeType, neibrNodeTypePro);
 	}
 };
 
@@ -298,46 +294,48 @@ double RWR(string user, string item, tuple<string, string, double> *linkType=NUL
 }
 
 //	基于BPR模型下的边权值的机器学习 
-void BRPtrain(const HIN *hin, const map<string,map<string,map<pair<string,double>,set<string>>>> *inP, map<string,double> *Para, map<string,set<string>> *posImpFB, string start, string end){
-	P = *inP;
-//	参数迭代
-	auto nPara=*Para, lPara=*Para; 
+void BRPtrain(const HIN &hin, const map<string,map<string,map<pair<string,double>,set<string>>>> &inP, map<string,double> &Para, map<string,set<string>> &posImpFB, string start, string end){
+	P = inP;
 //	获取k及以下各步长的元路径 
-	getPath(hin, k, start, end, &allPath);
-//	目标结点集合
+	getPath(&hin, k, start, end, &allPath);
+//	物品结点集合
 	set<string> allItem, negItem, posItem;
-	auto endNodeType = hin->nodeList.find(end);
+	auto endNodeType = hin.nodeList.find(end);
 	allItem.insert(endNodeType->second.begin(), endNodeType->second.end());
-	
-	auto nodeType = hin->nodeList.find(start);
-//	cout <<  nodeType->first << endl;
+//  用户结点集合
+	auto nodeType = hin.nodeList.find(start);
 
 //	训练规模
-	int count=1, notConvg=0;
-	double estimateDif, posEtm;
+	int count=1;
+	
 	while(true){
-		cout << count << endl;
-//		随机选取结点迭代拟合（一个点就是迭代一次）
+//		随机选取用户结点
 		auto istStart = select_randomly(nodeType->second.begin(), nodeType->second.end());
 //		正负反馈集合
-		posItem=(*posImpFB)[*istStart];
+		posItem = posImpFB[*istStart];
+		if(posItem.size()==0){
+//			没有正反馈
+			continue;
+		}
 		negItem.clear();
 		set_difference(allItem.begin(), allItem.end(), posItem.begin(), posItem.end(), inserter(negItem, negItem.begin()));
 //		最后一个参数不能直接用negItem.begin()，因为在set_different实现中，结果是直接被赋值的，但是set容器的元素不能直接被赋值 
-		if(posItem.size()==0){
-//		没有正反馈
-			continue; 
-		}
+
 //		随机正负反馈物品
 		auto posI = select_randomly(posItem.begin(), posItem.end());
-		posEtm = RWR(*istStart, *posI);
 		auto negI = select_randomly(negItem.begin(), negItem.end());
-		estimateDif = posEtm-RWR(*istStart, *negI);
+
+		
+		double posEtm = RWR(*istStart, *posI);
+		double negEtm = RWR(*istStart, *negI);
+		double estimateDif = posEtm - negEtm;
 //		对参数系列进行迭代 
-		for(auto para=nPara.begin(); para!=nPara.end(); para++){
-//		把边类型转化成pair形式的头尾结点
+		cout << count++ << endl;
+		bool Convg=true;
+		for(auto para=Para.begin(); para!=Para.end(); para++){
+//			把边类型转化成pair形式的头尾结点
 			tuple<string, string, double> linkType;
-			for(auto linksType=hin->linkTypeList.begin(); linksType!=hin->linkTypeList.end(); linksType++){
+			for(auto linksType=hin.linkTypeList.begin(); linksType!=hin.linkTypeList.end(); linksType++){
 				if(get<2>(*linksType)==para->first){
 					get<0>(linkType)=get<0>(*linksType);
 					get<1>(linkType)=get<1>(*linksType);
@@ -345,63 +343,74 @@ void BRPtrain(const HIN *hin, const map<string,map<string,map<pair<string,double
 					break;
 				}
 			}
+			
+//			n：学习速率参数
+			double posTypeEtm = RWR(*istStart, *posI, &linkType);
+			double negTypeEtm = RWR(*istStart, *negI, &linkType);
 			double n=7;
-			double grad = 1/(1+pow(e, estimateDif))*(RWR(*istStart, *posI, &linkType)-RWR(*istStart, *negI, &linkType));
+			double grad = 1/(1+pow(e,estimateDif)) * (posTypeEtm-negTypeEtm);
+//			避免负权值的产生
 			while(para->second+n*grad<0){
 				n *= 0.5;
 			}
 			para->second += n*grad;
 			//收敛检测 
 			if(abs(grad)>CONVERGE){
-				notConvg=1;
+				Convg=false;
 			}
 		}
-		lPara = nPara;
+		if(Convg) break;
 //		更新转移概率矩阵
-		transitionMatrix(hin, &lPara, &P);
-		count++;
-		if(notConvg==0){
-//			更新传入的参数列表
-			cout << count << endl;
-			*Para=lPara;
-			break;
-		}
+		transitionMatrix(hin, Para, P);
 	}
 }
 
+struct cmp
+{
+	bool operator ()(pair<string,double> a , pair<string,double> b){
+		return a.second > b.second;
+	}
+};
 
-bool lessPair(pair<string,int> a, pair<string,int> b){
-	return get<1>(a) < get<1>(b);
+bool lessPair(pair<string,double> a, pair<string,double> b){
+	return a.second < b.second;
 }
 
-
 void predict(const HIN &hin, const map<string,map<string,map<pair<string,double>,set<string>>>> &inP, vector<pair<string, double>> &topK, string user, string start, string end, int k){
-	priority_queue<pair<string,int>, vector<pair<string,int>>, decltype(&lessPair)> topKList;//(&lessPair)
+//	priority_queue<pair<string,int>, vector<pair<string,int>>, decltype(&lessPair)> topKList;//(&lessPair)
+	priority_queue<pair<string,double>, vector<pair<string,double>>, cmp> topKList;
 //	生成路径 
 	P = inP;
 	getPath(&hin, k, start, end, &allPath);
+	
 	
 //	目标结点集合 
 	auto endNodeList = hin.nodeList.find(end);
 	set<string> items;
 	items.insert(endNodeList->second.begin(), endNodeList->second.end());
+	cmp cm;
 	
 //	遍历目标结点 
 	for(auto item=items.begin(); item!=items.end(); item++){
-		pair<string, double> itemValue(*item, RWR(user, *item));
-		
+		double value = RWR(user, *item);
+		pair<string, double> itemValue(*item, value);
+
 		if(topKList.size() < k){
 			topKList.emplace(itemValue);
-		}else if(lessPair(topKList.top(), itemValue)){
+		}else if(cm(itemValue, topKList.top())){
 			topKList.pop();
 			topKList.emplace(itemValue);
+			
 		}
 	}
 	
+	
 //	输出检查
 	while(topKList.size()){
-		cout << get<0>(topKList.top()) << ":" << get<1>(topKList.top()) << endl; 
+		cout << topKList.top().first << ":" << topKList.top().second << endl;
+		topKList.pop();
 	}
+	
 }
 
 
