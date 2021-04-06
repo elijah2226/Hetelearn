@@ -6,7 +6,8 @@
 extern void transitionMatrix(const HIN&, const map<string,double>&, map<string,map<string,map<pair<string,double>,set<string>>>>&);
 extern void implicitFB(const set<tuple<string, string, double>>*, map<string, set<string>>*, int pos=2, int dir=1);
 extern void BRPtrain(const HIN&, const map<string,map<string,map<pair<string,double>,set<string>>>>&, map<string,double>&, map<string, set<string>>&, string start="userID", string end="placeID");
-extern void predict(const HIN&, const map<string,map<string,map<pair<string,double>,set<string>>>>&, vector<pair<string,double>>&, string, string start="userID", string end="placeID", int k=10);
+extern string predict(const HIN&, const map<string,map<string,map<pair<string,double>,set<string>>>>&, vector<pair<string,double>>&, string user="", string start="userID", string end="placeID", int k=10);
+extern double baseLine(const HIN&, const vector<pair<string, double>>&, string, string start="userID", string end="placeID");
 
 int main(int argc, char** argv) {
 //	定义文档信息，方便转换成网络 
@@ -65,8 +66,14 @@ int main(int argc, char** argv) {
 //	预测输出
 	transitionMatrix(hin, para, transMatrix);
 	vector<pair<string, double>> items;
-	predict(hin, transMatrix, items, "U1123");
-	
-	
+	string user = predict(hin, transMatrix, items);
+	double base = baseLine(hin, items, user);
+//  基准测试
+	for(int i:{1,2,2,3,4}){
+		items.clear();
+		user = predict(hin, transMatrix, items);
+		base = baseLine(hin, items, user);
+	}
+
 	return 0;
 }

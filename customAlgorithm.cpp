@@ -7,6 +7,7 @@
 #include<fstream>
 #include<ctime>
 #include<queue>
+#include<typeinfo>
 using namespace std;
 
 //	全局变量
@@ -32,10 +33,10 @@ Iter select_randomly(Iter start, Iter end) {
 
 
 //	返回结点的某边类型的数量
-int neibrNodeTypeCount(const map<string, set<tuple<string, string, double>>> *nodeLinkList, set<string> *neibrNodeList, string node, string neibrType){
+int neibrNodeTypeCount(const map<string, set<tuple<string, string, double>>> &nodeLinkList, set<string> *neibrNodeList, string node, string neibrType){
 	neibrNodeList->clear();
 	int count = 0;
-	auto links = nodeLinkList->find(neibrType);
+	auto links = nodeLinkList.find(neibrType);
 	for(auto link=(links->second).begin(); link!=(links->second).end(); link++){
 		if(get<0>(*link)==node){
 			count++;
@@ -76,7 +77,7 @@ void transitionMatrix(const HIN &hin, const map<string,double> &para, map<string
 				int nodeTypeCount;
 				double posibility; 
 //				获取结点特定边的数量
-				nodeTypeCount = neibrNodeTypeCount(&(hin.linkList), &neibrNodeList, node, iter2->first);
+				nodeTypeCount = neibrNodeTypeCount(hin.linkList, &neibrNodeList, node, iter2->first);
 				if(nodeTypeCount){
 					posibility = (para.find(iter2->first))->second*(1.0/nodeTypeCount);
 					pair<string, double> neibrTypeP(iter2->second, posibility);
@@ -372,13 +373,20 @@ struct cmp
 	}
 };
 
-bool lessPair(pair<string,double> a, pair<string,double> b){
-	return a.second < b.second;
-}
 
-void predict(const HIN &hin, const map<string,map<string,map<pair<string,double>,set<string>>>> &inP, vector<pair<string, double>> &topK, string user, string start, string end, int k){
-//	priority_queue<pair<string,int>, vector<pair<string,int>>, decltype(&lessPair)> topKList;//(&lessPair)
+// 预测
+string predict(const HIN &hin, const map<string,map<string,map<pair<string,double>,set<string>>>> &inP, vector<pair<string, double>> &topK, string user, string start, string end, int k){
 	priority_queue<pair<string,double>, vector<pair<string,double>>, cmp> topKList;
+
+//  随机生成起始点
+	if(!user.size()){
+		auto nodeType = hin.nodeList.find(start);
+		auto istStart = select_randomly(nodeType->second.begin(), nodeType->second.end());
+		user = *istStart;
+	}
+	cout << "user:" << user << endl;
+
+
 //	生成路径 
 	P = inP;
 	getPath(&hin, k, start, end, &allPath);
@@ -390,29 +398,147 @@ void predict(const HIN &hin, const map<string,map<string,map<pair<string,double>
 	items.insert(endNodeList->second.begin(), endNodeList->second.end());
 	cmp cm;
 	
+	
 //	遍历目标结点 
 	for(auto item=items.begin(); item!=items.end(); item++){
 		double value = RWR(user, *item);
 		pair<string, double> itemValue(*item, value);
-
+		
 		if(topKList.size() < k){
 			topKList.emplace(itemValue);
 		}else if(cm(itemValue, topKList.top())){
 			topKList.pop();
 			topKList.emplace(itemValue);
-			
 		}
 	}
 	
 	
 //	输出检查
+	reverse(topK.begin(), topK.end());
+	cout << "topK:" << endl;
 	while(topKList.size()){
+		topK.emplace_back(make_pair(topKList.top().first, topKList.top().second));
 		cout << topKList.top().first << ":" << topKList.top().second << endl;
 		topKList.pop();
 	}
-	
+	return user;
 }
 
+
+struct posLink{
+	string item;
+	int rate;
+	bool operator ()(pair<string,int> link){
+		if(link.second==rate && link.first==item) return true;
+		else return false;
+	}
+};
+
+
+// 自定义
+int linkDetail(const set<tuple<string,string,double>> &links, set<pair<string,int>> &endNodeList, string node){
+	endNodeList.clear();
+	int count = 0;
+	for(auto link=links.begin(); link!=links.end(); link++){
+		if(get<0>(*link)==node){
+			count++;
+			endNodeList.emplace(get<1>(*link),get<2>(*link));
+		}else if(get<1>(*link)==node){
+			count++;
+			endNodeList.emplace(get<0>(*link),get<2>(*link));
+		}
+	}
+	return count;
+}
+
+double posRank(vector<int>& rank, int pos){
+	int value = rank[pos];
+	int bef=0, aft=0, index=0;
+	while(index<pos){
+		if(rank[index++]<value) bef++;
+	}
+	while(index<rank.size()){
+		if(rank[index++]<value) aft++;
+	}
+	
+	double res;
+	if(aft&&bef) res = 1.0*aft/(bef+aft);
+	else if(bef) res = 1.0/bef;
+	else res = 1.0;
+	
+	return res;
+}
+// 基准测试
+double baseLine(const HIN &hin,const vector<pair<string, double>> &topK, string user, string start, string end){
+//  找节点类型
+	string linkType;
+	for(auto linkTypes=hin.linkTypeList.begin(); linkTypes!=hin.linkTypeList.end(); linkTypes++){
+		if((get<0>(*linkTypes)==start&&get<1>(*linkTypes)==end)||(get<1>(*linkTypes)==start&&get<0>(*linkTypes)==end)){
+			linkType = get<2>(*linkTypes);
+		}
+	}
+	
+//  求出终点
+	auto linksIter = hin.linkList.find(linkType);
+	auto links = linksIter->second;
+	set<pair<string,int>> endNodes;
+	int n = linkDetail(links, endNodes, user);
+	
+	cout << "实际连接的节点:" << endl;
+	for(auto iter=endNodes.begin(); iter!=endNodes.end(); iter++){
+		cout << iter->first << ":" << iter->second << endl;
+	}
+	
+    vector<int> rank;
+    int flag;
+	posLink posL;
+	
+	for(auto item=topK.begin(); item!=topK.end(); item++){
+		posL.item = item->first;
+		flag = 0;
+		for(int rate=0; rate<3; rate++){
+			posL.rate = rate;
+			auto iter = find_if(endNodes.begin(), endNodes.end(), posL);
+			if(iter != endNodes.end()){
+				rank.emplace_back(rate);
+				flag = 1;
+				break;
+			}
+		}
+		if(!flag){
+			rank.emplace_back(-1);
+		}
+	}
+	
+	cout << "rank数组：" << endl;
+	for(auto it:rank){
+		cout << it << " ";
+	}
+	cout << endl;
+	
+	
+	int nub = endNodes.size();
+	int r = rank.size()-count(rank.begin(), rank.end(), -1);
+
+	double base1=1;
+	if(nub){
+		if(nub<topK.size()){
+			base1 = 1.0*r/nub;
+		}else{
+			base1 = 1.0*r/rank.size();
+		}
+	}
+
+	double base2=0;
+	int pos = 0;
+	for(auto nub1:rank){
+		base2 += posRank(rank, pos++);
+	}
+
+	double res = 1.0*base1*base2/rank.size();
+	cout << "b1:" << base1 << " b2:" << base2 << " res:" << res << endl;
+	return res;
+}
 
 
 
