@@ -384,7 +384,7 @@ string predict(const HIN &hin, const map<string,map<string,map<pair<string,doubl
 		auto istStart = select_randomly(nodeType->second.begin(), nodeType->second.end());
 		user = *istStart;
 	}
-	cout << "user:" << user << endl;
+//	cout << "user:" << user << endl;
 
 
 //	生成路径 
@@ -415,10 +415,10 @@ string predict(const HIN &hin, const map<string,map<string,map<pair<string,doubl
 	
 //	输出检查
 	reverse(topK.begin(), topK.end());
-	cout << "topK:" << endl;
+//	cout << "topK:" << endl;
 	while(topKList.size()){
 		topK.emplace_back(make_pair(topKList.top().first, topKList.top().second));
-		cout << topKList.top().first << ":" << topKList.top().second << endl;
+//		cout << topKList.top().first << ":" << topKList.top().second << endl;
 		topKList.pop();
 	}
 	return user;
@@ -484,10 +484,10 @@ double baseLine(const HIN &hin,const vector<pair<string, double>> &topK, string 
 	set<pair<string,int>> endNodes;
 	int n = linkDetail(links, endNodes, user);
 	
-	cout << "实际连接的节点:" << endl;
-	for(auto iter=endNodes.begin(); iter!=endNodes.end(); iter++){
-		cout << iter->first << ":" << iter->second << endl;
-	}
+//	cout << "实际连接的节点:" << endl;
+//	for(auto iter=endNodes.begin(); iter!=endNodes.end(); iter++){
+//		cout << iter->first << ":" << iter->second << endl;
+//	}
 	
     vector<int> rank;
     int flag;
@@ -510,11 +510,11 @@ double baseLine(const HIN &hin,const vector<pair<string, double>> &topK, string 
 		}
 	}
 	
-	cout << "rank数组：" << endl;
-	for(auto it:rank){
-		cout << it << " ";
-	}
-	cout << endl;
+//	cout << "rank数组：" << endl;
+//	for(auto it:rank){
+//		cout << it << " ";
+//	}
+//	cout << endl;
 	
 	
 	int nub = endNodes.size();
@@ -536,7 +536,6 @@ double baseLine(const HIN &hin,const vector<pair<string, double>> &topK, string 
 	}
 
 	double res = 1.0*base1*base2/rank.size();
-	cout << "b1:" << base1 << " b2:" << base2 << " res:" << res << endl;
 	return res;
 }
 

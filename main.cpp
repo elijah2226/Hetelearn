@@ -61,19 +61,30 @@ int main(int argc, char** argv) {
 	for(auto p=para.begin(); p!=para.end(); p++){
 		outPut << p->first << ":" << p->second << endl;
 	}
-	
+
+
+	double sum = 0.0;
 	
 //	Ô¤²âÊä³ö
 	transitionMatrix(hin, para, transMatrix);
 	vector<pair<string, double>> items;
 	string user = predict(hin, transMatrix, items);
 	double base = baseLine(hin, items, user);
+	outPut << base << endl;
+	sum += base;
 //  »ù×¼²âÊÔ
-	for(int i:{1,2,2,3,4}){
+	
+	int a[100];
+	for(int i:a){
 		items.clear();
 		user = predict(hin, transMatrix, items);
 		base = baseLine(hin, items, user);
+		outPut << base << endl;
+		sum += base;
 	}
+	sum /= 101;
+	outPut << "ave:" << sum << endl;
+	cout << sum << endl;
 
 	return 0;
 }
